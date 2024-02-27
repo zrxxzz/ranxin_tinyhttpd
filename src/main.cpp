@@ -1,0 +1,38 @@
+#include <iostream>
+#include <memory>
+#include <thread>
+#include "server.hpp"
+#include "connection_handler.hpp"
+
+int main() {
+    try {
+        Server server(4000); // 创建Server实例，监听端口4000
+        server.start(); // 启动服务器，开始监听端口
+
+        std::cout << "Server started on port 4000" << std::endl;
+
+        while (true) {
+            // 等待并接受客户端连接
+            int clientSocket = server.acceptConnection();
+            if (clientSocket < 0) {
+                std::cerr << "Failed to accept client connection" << std::endl;
+                continue;
+            }else{
+                std::cout<<clientSocket<<std::endl;
+                // 使用智能指针管理ConnectionHandler，确保资源正确释放
+                std::shared_ptr<ConnectionHandler> handler(new ConnectionHandler(clientSocket));
+
+                // 创建一个线程来处理连接，实现并发处理
+                std::thread([&handler]() {
+                    handler->handleRequest();
+                }).detach(); // 将线程分离，让它独立执行
+            }
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "Exception caught in main: " << e.what() << std::endl;
+    } catch (...) {
+        std::cerr << "Unknown exception caught in main" << std::endl;
+    }
+
+    return 0;
+}
