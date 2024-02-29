@@ -23,7 +23,7 @@ int main() {
                 std::shared_ptr<ConnectionHandler> handler(new ConnectionHandler(clientSocket));
 
                 // 创建一个线程来处理连接，实现并发处理
-                std::thread([&handler]() {
+                std::thread([handler]() {
                     handler->handleRequest();
                 }).detach(); // 将线程分离，让它独立执行
             }

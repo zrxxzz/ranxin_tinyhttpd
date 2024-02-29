@@ -1,6 +1,11 @@
 #include "connection_handler.hpp"
 #include "request.hpp"
 #include "response.hpp"
+
+ConnectionHandler::ConnectionHandler(int _socket) : socket(_socket) {
+        std::cout << "the socket value: " << this->socket << std::endl;
+    }   
+    
 void ConnectionHandler::handleRequest() {
     const int bufferSize = 1024;
     char buffer[bufferSize];

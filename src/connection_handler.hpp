@@ -8,11 +8,7 @@ class ConnectionHandler {
 private:
     int socket;
 public:
-    ConnectionHandler(int _socket){
-        std::cout<<"the value:"<<this->socket<<std::endl;
-        *(&this->socket)=_socket;
-        std::cout<<"the value:"<<this->socket<<std::endl;
-        };
+    ConnectionHandler(int _socket);
     void handleRequest();
 };
 
