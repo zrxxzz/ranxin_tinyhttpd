@@ -38,7 +38,7 @@ bool Server::start() {
     }
 
 int Server::acceptConnection() {
-    std::cout<<"hello"<<std::endl;
+    
     int new_socket=accept(server_fd, (struct sockaddr *)&address, (socklen_t*)&addrlen);
     if(new_socket<0){
         throw std::runtime_error("Accept failed");

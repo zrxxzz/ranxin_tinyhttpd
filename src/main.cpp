@@ -18,7 +18,7 @@ int main() {
                 std::cerr << "Failed to accept client connection" << std::endl;
                 continue;
             }else{
-                std::cout<<clientSocket<<std::endl;
+                std::cout<<"the socket from client"<<clientSocket<<std::endl;
                 // 使用智能指针管理ConnectionHandler，确保资源正确释放
                 std::shared_ptr<ConnectionHandler> handler(new ConnectionHandler(clientSocket));
 
