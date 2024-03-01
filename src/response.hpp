@@ -2,27 +2,39 @@
 #define RESPONSE_CLASS_H
 #include <string>
 #include <sys/socket.h>
-#include "static_file_handler.hpp"
+#include <fstream>
 class Response {
 public:
-    std::string header = "Server : ranxin_httpd/0.1\r\n";
+    std::string header = "Server : ranxin_httpd/0.1\r\nContent-Type: text/html\r\n\n";
     std::string body;
-    std::string resBuf;
+    std::string resBuf="";
 
     void setBody(const std::string& responseBody) {
         body = responseBody;
     }
 
     std::string toString() const {
-        return "HTTP/1.1 200 OK\r\n" + header + body;
+        return "HTTP/1.0 200 OK\r\n" + header + body;
     }
 
     void handleStaticFile(const std::string& path){
-        
+        std::ifstream file(path);
+        if(file){   
+            std::ostringstream ss;
+            ss<<file.rdbuf();
+            std::string fileContent = ss.str();
+            resBuf="";
+            this->setBody(fileContent);
+            resBuf+=this->toString();
+            // DEBUG: testing response (static file)
+            // std::cout<<"this response are as followed:"<<resBuf<<std::endl;
+        }else{
+            throw std::runtime_error("FILE NOT FOUND!!!");
+        }
     };
 
     void handleCgiFile(const std::string& path){
-
+        
     };
 
     void notFound(){

@@ -1,7 +1,6 @@
 #include "connection_handler.hpp"
 #include "request.hpp"
 #include "response.hpp"
-#include "static_file_handler.hpp"
 
 struct stat st; //记录静态资源文件状态
 int cgi = 0; //判断是否需要执行CGI
@@ -13,8 +12,15 @@ bool isStaticResource(std::string& file){
         std::cout<<"static source not exist!"<<std::endl;
         return false;
     }else 
-    {
+    {   
         std::cout<<"path exist"<<std::endl;
+        if ((st.st_mode & S_IXUSR) ||
+                (st.st_mode & S_IXGRP) ||
+                (st.st_mode & S_IXOTH)    ){
+                    cgi = 1;
+                    return true;
+        }
+            
         if ((st.st_mode & S_IFMT) == S_IFDIR){
             file+="/index.html";
             if(stat(file.c_str(),&st)==-1){
@@ -23,10 +29,6 @@ bool isStaticResource(std::string& file){
             }
             else return true;
         }
-        if ((st.st_mode & S_IXUSR) ||
-                (st.st_mode & S_IXGRP) ||
-                (st.st_mode & S_IXOTH)    )
-            cgi = 1;
         return true;
     }
 }
@@ -54,39 +56,44 @@ void ConnectionHandler::handleRequest() {
 
     Request request;
     request.parseRequest(requestData);
+    // std::cout<<"the request data is:"<<requestData<<std::endl;
     // DEBUG: for testing HTTP method
     // std::cout<<"the method from the request: "<<request.method<<std::endl;
     // std::cout<<"the path from the request: "<<request.path<<std::endl;
     Response response;
-    StaticFileHandler staticFileHandler;
     try{
         if(request.method.compare("GET")==0){
             if(isStaticResource(request.path)){
                 if(cgi){
+                    // 暂时不考虑GET CGI
                     response.handleCgiFile(request.path);
                 }else{
+                    // 文件已经存在的前提下
                     // DEBUG: tesing the file_path
                     // std::cout<<"i'm here and the path is:"<<request.path<<std::endl;
                     response.handleStaticFile(request.path);
                 }
             }else{
                 response.notFound();
-                response.sendResponse(socket);
             }
+            response.sendResponse(socket);
         }else if(request.method.compare("POST")==0){
             if(isStaticResource(request.path)){
                 if(cgi){
-
+                    // DEBUG: check the cgi program is executable or not
+                    // std::cout<<"i'm here and the path is:"<<request.path<<std::endl;
+                    response.handleCgiFile(request.path);
                 }else{
-
+                    // 暂时先不写其他的POST请求
+                    response.notFound();
                 }
             }else{
                 response.notFound();
-                response.sendResponse(socket);
             }
         }else{
             throw std::runtime_error("UNDEFINED HTTP METHOD");
         }
+        response.sendResponse(socket);
     }catch(const std::exception& e){
         std::cerr<<"!!!!HERE IS AN ERROR:"<<e.what()<<std::endl;
     }

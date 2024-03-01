@@ -20,7 +20,6 @@ add_executable(ranxin_tinyhttpd
     src/request.cpp
     src/response.cpp
     src/CGI_handler.cpp
-    src/static_file_handler.cpp
     src/router.cpp
     src/logger.cpp
 )
