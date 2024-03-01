@@ -1,22 +1,47 @@
 #ifndef RESPONSE_CLASS_H
 #define RESPONSE_CLASS_H
 #include <string>
-
+#include <sys/socket.h>
+#include "static_file_handler.hpp"
 class Response {
 public:
-    std::string header;
+    std::string header = "Server : ranxin_httpd/0.1\r\n";
     std::string body;
-
-    void setHeader(const std::string& key, const std::string& value) {
-        header += key + ": " + value + "\r\n";
-    }
+    std::string resBuf;
 
     void setBody(const std::string& responseBody) {
         body = responseBody;
     }
 
     std::string toString() const {
-        return "HTTP/1.1 200 OK\r\n" + header + "\r\n" + body;
+        return "HTTP/1.1 200 OK\r\n" + header + body;
+    }
+
+    void handleStaticFile(const std::string& path){
+        
+    };
+
+    void handleCgiFile(const std::string& path){
+
+    };
+
+    void notFound(){
+        resBuf="";
+        resBuf+="HTTP/1.0 404 NOT FOUND\r\n"
+        "Server : ranxin_httpd/0.1\r\n"
+        "Content-Type: text/html\r\n\n"
+        "<HTML><TITLE>Not Found</TITLE>\r\n"
+        "<BODY><P>The server could not fulfill\r\n"
+        "your request because the resource specified\r\n"
+        "is unavailable or nonexistent.\r\n"
+        "</BODY></HTML>\r\n";
+    }
+
+    void sendResponse(int client_fd){
+        // DEBUG: test the response
+        // std::cout<<"ERROR SOCKET_FD:"<<client_fd<<std::endl;
+        // std::cout<<"the response buffer are:"<<resBuf<<std::endl;
+        size_t i=send(client_fd,resBuf.c_str(),resBuf.length(),0);
     }
 };
 

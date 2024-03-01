@@ -8,7 +8,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 # Include directories
 include_directories(src)
 
-add_compile_options(-pthread)
+add_compile_options(-pthread -g)
 
 link_libraries(-pthread)
 

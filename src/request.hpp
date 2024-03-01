@@ -1,5 +1,6 @@
 #ifndef REQUEST_CLASS_H
 #define REQUEST_CLASS_H
+#include <iostream>
 #include <string>
 #include <sstream> 
 class Request {
@@ -8,8 +9,8 @@ public:
     std::string path;
     std::string queryString;
 
-    // 解析从客户端接收到的原始请求数据
-    static Request parseRequest(const std::string& requestData);
+    // 解析请求
+    void parseRequest(const std::string& requestData);
 };
 
 #endif

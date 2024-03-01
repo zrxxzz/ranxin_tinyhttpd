@@ -1,9 +1,14 @@
 #include "request.hpp"
 
-Request Request::parseRequest(const std::string& requestData){
-    Request req;
+void Request::parseRequest(const std::string& requestData){
+    std::string version;
     std::istringstream requestStream(requestData);
-    requestStream >> req.method >> req.path; // 简化处理，只解析方法和路径
-    // 进一步解析可以提取查询字符串、HTTP版本等信息
-    return req;
+    // DEBUG: test the http request
+    //std::cout<<"here is request Data:"<<requestData<<std::endl;
+    requestStream >> this->method >> this->path >> version; 
+    // DEBUG: for testing HTTP method
+    // std::cout<<"the method from the request: "<<this->method<<std::endl;
+    // std::cout<<"the path from the request: "<<this->path<<std::endl;
+    
+
 }

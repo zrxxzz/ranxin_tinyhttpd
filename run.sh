@@ -6,6 +6,7 @@ else
         mkdir build
     else
         cd build && rm -rf *
+        cp ../src/htdocs . -r #静态文件
         cmake ..
         if [ $? -eq 0 ]; then 
             echo "Cmake success!"
