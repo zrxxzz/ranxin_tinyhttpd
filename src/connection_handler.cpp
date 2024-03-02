@@ -7,27 +7,27 @@ int cgi = 0; //判断是否需要执行CGI
 
 bool isStaticResource(std::string& file){
     file="."+file;
-    std::cout<<"the file path is:"<<file<<std::endl;
+    
     if(stat(file.c_str(),&st)==-1){
-        std::cout<<"static source not exist!"<<std::endl;
+        std::cout<<"static source: "<<file<<" not exist!"<<std::endl;
         return false;
     }else 
     {   
-        std::cout<<"path exist"<<std::endl;
-        if ((st.st_mode & S_IXUSR) ||
-                (st.st_mode & S_IXGRP) ||
-                (st.st_mode & S_IXOTH)    ){
-                    cgi = 1;
-                    return true;
-        }
-            
+        std::cout<<file<<" exist"<<std::endl;
+   
         if ((st.st_mode & S_IFMT) == S_IFDIR){
             file+="/index.html";
             if(stat(file.c_str(),&st)==-1){
                 std::cout<<"this is just a dir"<<std::endl;
                 return false;
             }
-            else return true;
+        }else{
+            if ((st.st_mode & S_IXUSR) ||
+            (st.st_mode & S_IXGRP) ||
+            (st.st_mode & S_IXOTH)    ){
+                cgi = 1;
+                }
+            return true;
         }
         return true;
     }
@@ -64,6 +64,7 @@ void ConnectionHandler::handleRequest() {
     try{
         if(request.method.compare("GET")==0){
             if(isStaticResource(request.path)){
+                std::cout<<"the file path is:"<<request.path<<" and the cgi is:"<<cgi<<std::endl;
                 if(cgi){
                     // 暂时不考虑GET CGI
                     response.handleCgiFile(request.path);
@@ -76,9 +77,10 @@ void ConnectionHandler::handleRequest() {
             }else{
                 response.notFound();
             }
-            response.sendResponse(socket);
+            // response.sendResponse(socket);
         }else if(request.method.compare("POST")==0){
             if(isStaticResource(request.path)){
+                std::cout<<"the file path is:"<<request.path<<" and the cgi is:"<<cgi<<std::endl;
                 if(cgi){
                     // DEBUG: check the cgi program is executable or not
                     // std::cout<<"i'm here and the path is:"<<request.path<<std::endl;

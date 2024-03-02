@@ -3,6 +3,8 @@
 #include <string>
 #include <sys/socket.h>
 #include <fstream>
+#include <stdexcept>
+
 class Response {
 public:
     std::string header = "Server : ranxin_httpd/0.1\r\nContent-Type: text/html\r\n\n";
@@ -34,7 +36,20 @@ public:
     };
 
     void handleCgiFile(const std::string& path){
-        
+        int pipefd[2];
+        pid_t pid;
+        if (pipe(pipefd) == -1) {
+            perror("pipe");
+            throw std::runtime_error("PIPE BUILD FAILED!");
+        }
+        std::cout<<"pipe[0]"<<pipefd[0]<<std::endl;
+        std::cout<<"pipe[1]"<<pipefd[1]<<std::endl;
+        pid = fork();
+        if (pid == -1) {
+            perror("fork");
+            throw std::runtime_error("FORK FAILED!");
+        }
+        std::cout<<"here the pid:"<<pid<<std::endl;
     };
 
     void notFound(){
