@@ -7,20 +7,20 @@ int cgi = 0; //判断是否需要执行CGI
 bool isStaticResource(std::string& file){
     file="."+file;
     
-    if(stat(file.c_str(),&st)==-1){
+    if(stat(file.c_str(),&st)==-1){// 不存在
         std::cout<<"static source: "<<file<<" not exist!"<<std::endl;
         return false;
     }else 
-    {   
+    {   // 存在
         std::cout<<file<<" exist"<<std::endl;
    
-        if ((st.st_mode & S_IFMT) == S_IFDIR){
+        if ((st.st_mode & S_IFMT) == S_IFDIR){ // 是目录
             file+="/index.html";
             if(stat(file.c_str(),&st)==-1){
                 std::cout<<"this is just a dir"<<std::endl;
                 return false;
-            }
-        }else{
+            }else return true;
+        }else{ // 不是目录
             if ((st.st_mode & S_IXUSR) ||
             (st.st_mode & S_IXGRP) ||
             (st.st_mode & S_IXOTH)    ){
@@ -40,8 +40,6 @@ void ConnectionHandler::handleRequest() {
     const int bufferSize = 1024;
     char buffer[bufferSize];
     std::string requestData;
-    // DEBUG：for socket_fd
-    //std::cout<<"the socket from client:"<<this->socket<<std::endl;
     
     ssize_t bytesRead = read(socket, buffer, bufferSize - 1);
     if (bytesRead < 0) {
@@ -55,10 +53,6 @@ void ConnectionHandler::handleRequest() {
 
     Request request;
     request.parseRequest(requestData);
-    // std::cout<<"the request data is:"<<requestData<<std::endl;
-    // DEBUG: for testing HTTP method
-    // std::cout<<"the method from the request: "<<request.method<<std::endl;
-    // std::cout<<"the path from the request: "<<request.path<<std::endl;
     Response response(this->socket);
     try{
         if(request.method.compare("GET")==0){
