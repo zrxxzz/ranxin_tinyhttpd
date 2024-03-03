@@ -25,7 +25,7 @@ void Request::parseRequest(const std::string& requestData){
         std::string tmp="Content-Length:";
         size_t pos = line.find(tmp);
         if(pos != std::string::npos){
-            this->conternLength = line.substr(pos + tmp.length()+1);
+            this->contentLength = line.substr(pos + tmp.length()+1);
             // std::cout<<"CONTENT-LENGTH"<<lengthStr<<std::endl;
         }
     }

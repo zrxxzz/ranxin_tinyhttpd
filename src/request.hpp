@@ -9,7 +9,7 @@ public:
     std::string method;
     std::string path;
     std::string queryString;
-    std::string conternLength;
+    std::string contentLength;
     // 解析请求
     void parseRequest(const std::string& requestData);
 };

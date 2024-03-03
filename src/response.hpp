@@ -5,6 +5,7 @@
 #include <fstream>
 #include <stdexcept>
 #include "request.hpp"
+#include "CGI_handler.hpp"
 class Response {
 public:
     int clientSocket;
@@ -39,31 +40,8 @@ public:
     };
 
     void handleCgiFile(const Request& request){
-        // 设置环境变量
-        // std::string meth_env="REQUEST_METHOD="+method;
-        setenv("REQUEST_METHOD",request.method.c_str(),1); 
-        // 第三个参数1表示，如果环境变量已存在，则替代
-        setenv("QUERY_STRING",request.queryString.c_str(),1);
-        setenv("CONTENT_LENGTH",request.conternLength.c_str(),1);
-        // 开管道和子进程
-        int pipefd[2];
-        pid_t pid;
-        if (pipe(pipefd) == -1) {
-            perror("pipe");
-            throw std::runtime_error("PIPE BUILD FAILED!");
-        }
-
-        pid = fork();
-        if (pid == -1) {
-            perror("fork");
-            throw std::runtime_error("FORK FAILED!");
-        }
-        if(pid==0){// 子进程
-
-        }else{// 父进程
-
-        }
-        std::cout<<"here the pid:"<<pid<<std::endl;
+       CgiHandler cgiHandler(request.path,request.method,request.queryString,request.contentLength,clientSocket);
+        cgiHandler.executeCgi();
     };
 
     void notFound(){
