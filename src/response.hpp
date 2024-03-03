@@ -4,13 +4,16 @@
 #include <sys/socket.h>
 #include <fstream>
 #include <stdexcept>
-
+#include "request.hpp"
 class Response {
 public:
+    int clientSocket;
     std::string header = "Server : ranxin_httpd/0.1\r\nContent-Type: text/html\r\n\n";
     std::string body;
     std::string resBuf="";
 
+    Response(int _socket) : clientSocket(_socket){};
+    
     void setBody(const std::string& responseBody) {
         body = responseBody;
     }
@@ -35,19 +38,30 @@ public:
         }
     };
 
-    void handleCgiFile(const std::string& path){
+    void handleCgiFile(const Request& request){
+        // 设置环境变量
+        // std::string meth_env="REQUEST_METHOD="+method;
+        setenv("REQUEST_METHOD",request.method.c_str(),1); 
+        // 第三个参数1表示，如果环境变量已存在，则替代
+        setenv("QUERY_STRING",request.queryString.c_str(),1);
+        setenv("CONTENT_LENGTH",request.conternLength.c_str(),1);
+        // 开管道和子进程
         int pipefd[2];
         pid_t pid;
         if (pipe(pipefd) == -1) {
             perror("pipe");
             throw std::runtime_error("PIPE BUILD FAILED!");
         }
-        std::cout<<"pipe[0]"<<pipefd[0]<<std::endl;
-        std::cout<<"pipe[1]"<<pipefd[1]<<std::endl;
+
         pid = fork();
         if (pid == -1) {
             perror("fork");
             throw std::runtime_error("FORK FAILED!");
+        }
+        if(pid==0){// 子进程
+
+        }else{// 父进程
+
         }
         std::cout<<"here the pid:"<<pid<<std::endl;
     };

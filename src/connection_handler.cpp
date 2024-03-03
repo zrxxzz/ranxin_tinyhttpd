@@ -1,5 +1,4 @@
 #include "connection_handler.hpp"
-#include "request.hpp"
 #include "response.hpp"
 
 struct stat st; //记录静态资源文件状态
@@ -60,14 +59,14 @@ void ConnectionHandler::handleRequest() {
     // DEBUG: for testing HTTP method
     // std::cout<<"the method from the request: "<<request.method<<std::endl;
     // std::cout<<"the path from the request: "<<request.path<<std::endl;
-    Response response;
+    Response response(this->socket);
     try{
         if(request.method.compare("GET")==0){
             if(isStaticResource(request.path)){
                 std::cout<<"the file path is:"<<request.path<<" and the cgi is:"<<cgi<<std::endl;
                 if(cgi){
-                    // 暂时不考虑GET CGI
-                    response.handleCgiFile(request.path);
+                    
+                    response.handleCgiFile(request);
                 }else{
                     // 文件已经存在的前提下
                     // DEBUG: tesing the file_path
@@ -77,14 +76,13 @@ void ConnectionHandler::handleRequest() {
             }else{
                 response.notFound();
             }
-            // response.sendResponse(socket);
         }else if(request.method.compare("POST")==0){
             if(isStaticResource(request.path)){
                 std::cout<<"the file path is:"<<request.path<<" and the cgi is:"<<cgi<<std::endl;
                 if(cgi){
                     // DEBUG: check the cgi program is executable or not
                     // std::cout<<"i'm here and the path is:"<<request.path<<std::endl;
-                    response.handleCgiFile(request.path);
+                    response.handleCgiFile(request);
                 }else{
                     // 暂时先不写其他的POST请求
                     response.notFound();
@@ -95,7 +93,7 @@ void ConnectionHandler::handleRequest() {
         }else{
             throw std::runtime_error("UNDEFINED HTTP METHOD");
         }
-        response.sendResponse(socket);
+        if(!cgi)response.sendResponse(socket);
     }catch(const std::exception& e){
         std::cerr<<"!!!!HERE IS AN ERROR:"<<e.what()<<std::endl;
     }
