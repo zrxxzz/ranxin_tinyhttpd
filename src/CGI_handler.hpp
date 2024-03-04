@@ -4,17 +4,19 @@
 #include <sys/wait.h>
 #include <string>
 #include <iostream>
+#include <stdexcept>
+#include <csignal>
 class CgiHandler{
 private:
     std::string method;
     std::string path;
     std::string queryString;
-    std::string contentLength;
+    int contentLength;
     int clientSocket;
     int cgi_output[2];
     int cgi_input[2];
 public:
-    CgiHandler(const std::string& _path, const std::string& _method, const std::string& _queryString, const std::string& _contentLength, int _clientSocket)
+    CgiHandler(const std::string& _path, const std::string& _method, const std::string& _queryString, const int& _contentLength, int _clientSocket)
         : path(_path), method(_method), queryString(_queryString), contentLength(_contentLength), clientSocket(_clientSocket) {
     }
 
@@ -23,7 +25,7 @@ public:
         if(this->method=="GET"){
             setenv("QUERY_STRING",this->queryString.c_str(),1);
         }else if(this->method=="POST"){
-            setenv("CONTENT_LENGTH",this->contentLength.c_str(),1);
+            setenv("CONTENT_LENGTH",std::to_string(this->contentLength).c_str(),1);
         }
             
         // 第三个参数1表示，如果环境变量已存在，则替代
@@ -43,13 +45,10 @@ public:
             throw std::runtime_error("FORK FAILED!");
             return ;
         }else if(pid==0){// 子进程
-            std::cout<<"I'm CHILD!!!!"<<pid<<std::endl;
             this->childProcess();
-               
+            
         }else{// 父进程
-            std::cout<<"I'm FATHER!!!!"<<pid<<std::endl;
             this->parentProcess();
-            std::cout<<"PARENT DOWN!!!"<<std::endl;
             waitpid(pid,&status,0);
         }
         
@@ -75,16 +74,18 @@ protected:
     void parentProcess(){
         char c;
         std::string header="HTTP/1.0 200 OK\r\nContent-Type: text/html\r\n\n";
-        char buffer[1024];
+        send(this->clientSocket,header.c_str(),header.length(),0);
         close(cgi_output[1]);
         close(cgi_input[0]);
         if(this->method=="POST"){
-            for(int i=0;i<stoi(this->contentLength);i++){
-                recv(this->clientSocket,&c,1,0);
-                write(cgi_input[1],&c,1);
+            int content_length=this->contentLength;
+            if(content_length>0){
+                std::vector<char> buffer(content_length);
+                if(recv(this->clientSocket, buffer.data(), buffer.size(), 0)>0){
+                    write(cgi_input[1], buffer.data(), buffer.size());
+                }          
             }
         }
-        send(this->clientSocket,header.c_str(),header.length(),0);
         
         while(read(cgi_output[0],&c,1)>0){
             send(this->clientSocket,&c,1,0);

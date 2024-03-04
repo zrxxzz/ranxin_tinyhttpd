@@ -59,15 +59,11 @@ void ConnectionHandler::handleRequest() {
             if(isStaticResource(request.path)){
                 std::cout<<"the file path is:"<<request.path<<" and the cgi is:"<<cgi<<std::endl;
                 if(cgi){
-                    
                     response.handleCgiFile(request);
                     cgi = 0;// CGI重置
                 }else{
                     // 文件已经存在的前提下
-                    // DEBUG: tesing the file_path
-                    // std::cout<<"i'm here and the path is:"<<request.path<<std::endl;
                     response.handleStaticFile(request.path);
-                    
                 }
             }else{
                 response.notFound();
@@ -76,8 +72,6 @@ void ConnectionHandler::handleRequest() {
             if(isStaticResource(request.path)){
                 std::cout<<"the file path is:"<<request.path<<" and the cgi is:"<<cgi<<std::endl;
                 if(cgi){
-                    // DEBUG: check the cgi program is executable or not
-                    // std::cout<<"i'm here and the path is:"<<request.path<<std::endl;
                     response.handleCgiFile(request);
                     cgi = 0;// CGI重置
                 }else{
