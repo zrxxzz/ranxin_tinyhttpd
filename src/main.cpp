@@ -22,6 +22,16 @@ int main() {
                 std::shared_ptr<ConnectionHandler> handler(new ConnectionHandler(clientSocket));
 
                 // 创建一个线程来处理连接，实现并发处理
+                char* buffer;
+                if((buffer = getcwd(NULL, 0)) == NULL)
+                {
+                    perror("getcwd error");
+                }
+                else
+                {
+                    std::cout<<"the working path is:"<<buffer<<std::endl;
+                    free(buffer);
+                }
                 std::thread([handler]() {
                     handler->handleRequest();
                 }).detach();

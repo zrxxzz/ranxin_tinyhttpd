@@ -28,7 +28,7 @@ bool Server::start() {
         }
 
         // 开始监听
-        if (listen(server_fd, 3) < 0) { // 同时可以有3个等待连接的请求
+        if (listen(server_fd, 10) < 0) { // 同时可以有10个等待连接的请求
             perror("listen failed");
             return false;
         }

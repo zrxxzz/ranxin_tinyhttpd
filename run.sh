@@ -7,7 +7,7 @@ else
     else
         cd build && rm -rf *
         cp ../src/htdocs . -r #静态文件
-        mv ./htdocs/*.cgi . #移动CGI文件
+        cp ./htdocs/*.cgi . #移动CGI文件
         cmake ..
         if [ $? -eq 0 ]; then 
             echo "Cmake success!"

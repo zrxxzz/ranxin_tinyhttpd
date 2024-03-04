@@ -5,7 +5,7 @@ struct stat st; //记录静态资源文件状态
 int cgi = 0; //判断是否需要执行CGI
 
 bool isStaticResource(std::string& file){
-    file="."+file;
+    file="./htdocs"+file;
     
     if(stat(file.c_str(),&st)==-1){// 不存在
         std::cout<<"static source: "<<file<<" not exist!"<<std::endl;
@@ -61,11 +61,13 @@ void ConnectionHandler::handleRequest() {
                 if(cgi){
                     
                     response.handleCgiFile(request);
+                    cgi = 0;// CGI重置
                 }else{
                     // 文件已经存在的前提下
                     // DEBUG: tesing the file_path
                     // std::cout<<"i'm here and the path is:"<<request.path<<std::endl;
                     response.handleStaticFile(request.path);
+                    
                 }
             }else{
                 response.notFound();
@@ -77,6 +79,7 @@ void ConnectionHandler::handleRequest() {
                     // DEBUG: check the cgi program is executable or not
                     // std::cout<<"i'm here and the path is:"<<request.path<<std::endl;
                     response.handleCgiFile(request);
+                    cgi = 0;// CGI重置
                 }else{
                     // 暂时先不写其他的POST请求
                     response.notFound();
