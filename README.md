@@ -225,9 +225,62 @@ sprintf(path, "htdocs%s", url);
 
 ### 主体设计结构
 
-### 1. **Server类**
+> 下列代码只放hpp定义，具体实现请前往仓库（文章最底部）
 
-- **职责**：负责服务器的启动、监听和关闭。
+#### 主体架构图
+
+![image-20240304210631380](https://typora-zrx.oss-cn-beijing.aliyuncs.com/img/2024/03/04/20240304-210634.png)
+
+#### main 函数
+
+```c++
+#include <iostream>
+#include <memory>
+#include <thread>
+#include "Server.h"
+#include "ConnectionHandler.h"
+
+int main() {
+    try {
+        Server server(4000); // 创建Server实例，监听端口4000
+        server.start(); // 启动服务器，开始监听端口
+
+        std::cout << "Server started on port 4000" << std::endl;
+
+        while (true) {
+            // 等待并接受客户端连接
+            int clientSocket = server.acceptConnection();
+            if (clientSocket < 0) {
+                std::cerr << "Failed to accept client connection" << std::endl;
+                continue;
+            }
+
+            // 使用智能指针管理ConnectionHandler，确保资源正确释放
+            std::shared_ptr<ConnectionHandler> handler(new ConnectionHandler(clientSocket));
+
+            // 创建一个线程来处理连接，实现并发处理
+            std::thread([handler]() {
+                handler->handleRequest();
+            }).detach(); // 将线程分离，让它独立执行
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "Exception caught in main: " << e.what() << std::endl;
+    } catch (...) {
+        std::cerr << "Unknown exception caught in main" << std::endl;
+    }
+
+    return 0;
+}
+
+```
+
+> 注意，这里的Lambda表达式捕获时使用的是值捕获，如果是引用捕获，中间shared_ptr如果执行或修改了参数，那么表达式内部也会发生变化（socket描述符发生变化，通道无法建立）
+
+> 同时，不能直接使往thread传入函数指针，因为这里调用的是对象的成员函数，因此传入指针前必须先捕获对象，这就要求使用lambda表达式了
+
+#### 1. **Server类**
+
+- **职责**：负责服务器的初始化、启动、监听。
 
 - 方法
 
@@ -235,9 +288,35 @@ sprintf(path, "htdocs%s", url);
 
   - `start()`: 配置服务器，绑定端口，监听连接。
   - `acceptConnection()`: 等待并接受客户端连接。
-  - `shutdown()`: 关闭服务器。
 
-### 2. **ConnectionHandler类**
+```C++
+#ifndef SERVER_CLASS_H
+#define SERVER_CLASS_H
+
+#include <iostream>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <cstring>
+#include <unistd.h>
+
+
+class Server {
+private:
+    int server_fd; // 服务器套接字文件描述符
+    struct sockaddr_in address; // 服务器地址
+    int addrlen; // 地址长度
+
+public:
+    Server(int port);
+    bool start();
+    int acceptConnection();
+    ~Server();
+};
+
+#endif
+```
+
+#### 2. **ConnectionHandler类**
 
 - **职责**：处理单个客户端连接。
 
@@ -246,9 +325,33 @@ sprintf(path, "htdocs%s", url);
   ：
 
   - `handleRequest()`: 处理客户端的HTTP请求。
-  - `sendResponse()`: 发送HTTP响应给客户端。
+  - `isStaticResource();`: 判断静态资源是否存在
 
-### 3. **Request类**
+```c++
+#ifndef CONNECTION_HANDLER_CLASS_H
+#define CONNECTION_HANDLER_CLASS_H
+#include <iostream>
+#include <string>
+
+#include <sys/select.h> 
+#include <sys/stat.h>
+#include <unistd.h> 
+#include <stdexcept>
+
+class ConnectionHandler {
+private:
+    int socket;
+public:
+    ConnectionHandler(int _socket);
+    void handleRequest();
+};
+
+bool isStaticResource(std::string& file);
+
+#endif
+```
+
+#### 3. **Request类**
 
 - **职责**：解析和存储HTTP请求信息。
 
@@ -268,19 +371,78 @@ sprintf(path, "htdocs%s", url);
 
   - `parseRequest()`: 从客户端连接中读取并解析HTTP请求。
 
-### 4. **Response类**
+```c++
+#ifndef REQUEST_CLASS_H
+#define REQUEST_CLASS_H
+#include <iostream>
+#include <string>
+#include <sstream> 
+#include <vector>
+class Request {
+public:
+    std::string method;
+    std::string path;
+    std::string queryString;
+    int contentLength;
+    std::string content;
+    // 解析请求
+    void parseRequest(const std::string& requestData);
+};
 
-- **职责**：构建和存储HTTP响应信息。
+#endif
+```
+
+####  4. **Response类**
+
+- **职责**：构建和存储HTTP响应信息，发送响应。
 
 - 方法
 
   ：
 
-  - `setHeader()`: 设置响应头。
   - `setBody()`: 设置响应体。
-  - `send()`: 发送响应给客户端。
+  - `handleStaticFile`: 处理静态文件
+  - `handleCgiFile`:处理CGI文件
+  - `sendResponse`:发送响应
+  - `notFound()`:处理其他情况
 
-### 5. **CGIHandler类**
+```c++
+#ifndef RESPONSE_CLASS_H
+#define RESPONSE_CLASS_H
+
+#include <string>
+#include <sys/socket.h>
+#include <fstream>
+#include <sstream> // 注意添加这个头文件，因为使用了ostringstream
+#include "request.hpp" 
+#include "CGI_handler.hpp" 
+
+class Response {
+public:
+    int clientSocket;
+    std::string header;
+    std::string body;
+    std::string resBuf;
+
+    Response(int _socket);
+    
+    void setBody(const std::string& responseBody);
+
+    std::string toString() const;
+
+    void handleStaticFile(const std::string& path);
+
+    void handleCgiFile(const Request& request);
+
+    void notFound();
+
+    void sendResponse(int client_fd);
+};
+
+#endif // RESPONSE_CLASS_H
+```
+
+#### 5. **CGIHandler类**
 
 - **职责**：执行CGI脚本并处理其输出。
 
@@ -288,29 +450,49 @@ sprintf(path, "htdocs%s", url);
 
   ：
 
-  - `execute()`: 执行CGI脚本，传递必要的环境变量和输入数据，并捕获输出。
+  - `executeCgi()`: 处理CGI脚本
+  - `setEnv()`: 设置环境变量
+  - `childProcess()`: 子进程处理
+  - `parentProcess()`: 父进程处理
 
-### 6. **Router类**
+```c++
+#ifndef CGI_HANDLER_CLASS_H
+#define CGI_HANDLER_CLASS_H
 
-- **职责**：根据请求的URL决定如何处理请求（静态资源服务或CGI执行）。
+#include <string>
+#include <sys/socket.h>
+#include <sys/wait.h>
+#include <unistd.h>
+#include <cstdlib>
+#include <iostream>
+#include <stdexcept>
+#include <vector>
 
-- 方法
+class CgiHandler {
+private:
+    std::string method;
+    std::string path;
+    std::string queryString;
+    int contentLength;
+    int clientSocket;
+    int cgi_output[2];
+    int cgi_input[2];
 
-  ：
+public:
+    CgiHandler(const std::string& _path, const std::string& _method, const std::string& _queryString, const int& _contentLength, int _clientSocket);
 
-  - `routeRequest()`: 确定请求是请求静态资源还是需要执行CGI。
+    void executeCgi();
 
-### 7. **StaticFileHandler类**
+protected:
+    void setEnv();
+    void childProcess();
+    void parentProcess();
+};
 
-- **职责**：处理静态文件请求。
+#endif // CGI_HANDLER_CLASS_H
+```
 
-- 方法
-
-  ：
-
-  - `serveFile()`: 根据请求的路径找到并返回静态文件。
-
-### 8. **Logger类**
+#### 7. **Logger类**
 
 - **职责**：提供日志记录功能。
 
@@ -319,6 +501,40 @@ sprintf(path, "htdocs%s", url);
   ：
 
   - `log()`: 记录日志信息。
+
+> 暂无
+
+### ACHIEVE
+
+![image-20240304212530770](https://typora-zrx.oss-cn-beijing.aliyuncs.com/img/2024/03/04/20240304-213347.png)
+
+![image-20240304212546887](https://typora-zrx.oss-cn-beijing.aliyuncs.com/img/2024/03/04/20240304-213350.png)
+
+![image-20240304212609978](https://typora-zrx.oss-cn-beijing.aliyuncs.com/img/2024/03/04/20240304-213352.png)
+
+### Q&A
+
+- Q：为什么每次都是用 **const** type **&** 进行传参
+
+  A：const 是为了防止代码被修改，& 是减少整个拷贝需要的开销（内存、时间），总体来说是为了安全和性能 
+
+- Q：为什么要使用shared_ptr 来处理client连接
+
+  A：
+
+  - `std::shared_ptr`的引用计数机制是线程安全的，这意味着它可以安全地在多个线程间共享
+  - `std::shared_ptr`提供自动的内存管理功能，它会跟踪引用计数，当没有任何`shared_ptr`对象指向当前资源时，它会自动释放该资源
+  - 具体详见下一章CPP学习日记（五）
+
+### TODO
+
+- 线程池管理client
+- 编写Logger类保存日志
+- 利用事件循环机制（select、poll、epoll）实现I/O多路复用
+
+### ISSUE
+
+- POST带请求体无法传递给管道
 
 
 
