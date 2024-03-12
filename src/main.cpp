@@ -2,7 +2,7 @@
 #include <thread>
 #include "server.hpp"
 #include "connection_handler.hpp"
-
+#include "threadPool.hpp"
 int main() {
     try {
         Server server(4000); // 创建Server实例，监听端口4000
@@ -21,11 +21,12 @@ int main() {
                 //std::cout<<"the socket from client"<<clientSocket<<std::endl;
                 std::shared_ptr<ConnectionHandler> handler(new ConnectionHandler(clientSocket));
 
-                // TODO:创建一个线程来处理连接，实现并发处理
-                
-                std::thread([handler]() {
+                threadPool pool(10);
+
+                pool.enqueue([handler]{
                     handler->handleRequest();
-                }).detach();
+                });
+                
             }
         }
     } catch (const std::exception& e) {
