@@ -23,7 +23,7 @@ int main() {
 
                 threadPool pool(10);
 
-                pool.enqueue([handler]{
+                pool.enqueue([&handler]{ // 值捕获和引用捕获看个人需求吧
                     handler->handleRequest();
                 });
                 
