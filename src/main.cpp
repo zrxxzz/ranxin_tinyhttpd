@@ -21,12 +21,13 @@ int main() {
                 //std::cout<<"the socket from client"<<clientSocket<<std::endl;
                 std::shared_ptr<ConnectionHandler> handler(new ConnectionHandler(clientSocket));
 
-                threadPool pool(10);
+                threadPool pool(4);
 
-                pool.enqueue([&handler]{ // 值捕获和引用捕获看个人需求吧
+                auto res=pool.enqueue([&handler]{ // 值捕获和引用捕获看个人需求吧
                     handler->handleRequest();
                 });
                 
+                // res.get(); //future 类可以返回调用结果
             }
         }
     } catch (const std::exception& e) {
